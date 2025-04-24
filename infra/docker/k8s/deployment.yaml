@@ -1,0 +1,22 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: crime-analysis
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: crime-analysis
+  template:
+    metadata:
+      labels:
+        app: crime-analysis
+    spec:
+      containers:
+      - name: crime-analysis
+        image: ghcr.io/yourusername/crime-analysis:latest
+        ports:
+        - containerPort: 5000
+        envFrom:
+        - secretRef:
+            name: openai-secrets  # Store API keys in K8s Secrets
