@@ -1,0 +1,30 @@
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+dist/
+build/
+
+# Data
+data/raw/*.csv   # Exclude raw data (if large)
+data/processed/temp_*
+
+# Secrets
+.env
+.env.local
+*.key
+
+# IDE
+.vscode/
+.idea/
+
+# Jupyter
+.ipynb_checkpoints/
+
+# OS
+.DS_Store
+
+# Terraform
+*.tfstate
+*.tfstate.backup
+.terraform.lock.hcl
