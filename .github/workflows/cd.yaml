@@ -2,33 +2,23 @@ name: CD Pipeline
 on:
   push:
     branches: [main]
-
 jobs:
   deploy:
     runs-on: ubuntu-latest
-    needs: test
     steps:
       - uses: actions/checkout@v4
       - name: Install Terraform
         uses: hashicorp/setup-terraform@v2
+      - name: Get OpenAI API Key from Key Vault
+        run: |
+          OPENAI_API_KEY=$(az keyvault secret show \
+            --vault-name crime-analysis-kv \
+            --name OPENAI-API-KEY \
+            --query value -o tsv)
+          echo "OPENAI_API_KEY=$OPENAI_API_KEY" >> $GITHUB_ENV
+        env:
+          AZURE_CLIENT_ID: ${{ secrets.AZURE_CLIENT_ID }}
+          AZURE_CLIENT_SECRET: ${{ secrets.AZURE_CLIENT_SECRET }}
+          AZURE_TENANT_ID: ${{ secrets.AZURE_TENANT_ID }}
       - name: Deploy to AKS
         run: bash scripts/deploy_to_aks.sh
-       - env:
-        -  ARM_CLIENT_ID: ${{ secrets.AZURE_CLIENT_ID }}
-         - ARM_CLIENT_SECRET: ${{ secrets.AZURE_CLIENT_SECRET }}
-         - ARM_SUBSCRIPTION_ID: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
-         - ARM_TENANT_ID: ${{ secrets.AZURE_TENANT_ID }}
-
-
-
-          - name: Get OpenAI API Key from Key Vault
-  run: |
-    OPENAI_API_KEY=$(az keyvault secret show \
-      --vault-name crime-analysis-kv \
-      --name OPENAI-API-KEY \
-      --query value -o tsv)
-    echo "OPENAI_API_KEY=$OPENAI_API_KEY" >> $GITHUB_ENV
-  env:
-    AZURE_CLIENT_ID: ${{ secrets.AZURE_CLIENT_ID }}
-    AZURE_CLIENT_SECRET: ${{ secrets.AZURE_CLIENT_SECRET }}
-    AZURE_TENANT_ID: ${{ secrets.AZURE_TENANT_ID }}
