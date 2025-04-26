@@ -2,6 +2,9 @@ provider "azurerm" {
   features {}
 }
 
+# Add this data source block
+data "azurerm_client_config" "current" {}
+
 resource "azurerm_resource_group" "crime_rg" {
   name     = "crime-analysis-rg"
   location = "East US"
