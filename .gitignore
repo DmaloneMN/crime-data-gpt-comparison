@@ -28,3 +28,8 @@ data/processed/temp_*
 *.tfstate
 *.tfstate.backup
 .terraform.lock.hcl
+
+# Terraform vars
+**/terraform.tfvars
+**/*.auto.tfvars
+*.tfvars
