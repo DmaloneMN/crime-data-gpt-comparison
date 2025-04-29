@@ -30,6 +30,6 @@ data/processed/temp_*
 .terraform.lock.hcl
 
 # Terraform vars
-**/terraform.tfvars
-**/*.auto.tfvars
+*/terraform.tfvars
+*/*.auto.tfvars
 *.tfvars
