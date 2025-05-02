@@ -1,0 +1,71 @@
+name: Build and Deploy
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+
+env:
+  ACR_NAME: crimeanalysisacr
+  AKS_CLUSTER: crime-analysis-aks
+  RESOURCE_GROUP: crime-analysis-rg
+  APP_NAME: crime-analysis
+  TAG: latest
+
+jobs:
+  build-test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      # ===== NEW DOCKER BUILD =====
+      - name: Build Docker image
+        run: |
+          docker build -f infra/docker/Dockerfile -t $ACR_NAME.azurecr.io/$APP_NAME:$TAG .
+      
+      # ===== NEW UNIT TESTS =====  
+      - name: Run tests
+        run: |
+          docker run --rm $ACR_NAME.azurecr.io/$APP_NAME:$TAG python -m pytest
+
+  deploy-prod:
+    needs: build-test
+    runs-on: ubuntu-latest
+    environment: production
+    steps:
+      - uses: actions/checkout@v4
+
+      # ===== AZURE AUTH =====
+      - name: Azure login
+        uses: azure/login@v1
+        with:
+          client-id: ${{ secrets.AZURE_CLIENT_ID }}
+          tenant-id: ${{ secrets.AZURE_TENANT_ID }}
+          subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
+
+      # ===== DOCKER BUILD/PUSH =====
+      - name: Build and push to ACR
+        run: |
+          az acr login --name $ACR_NAME
+          docker build -f infra/docker/Dockerfile -t $ACR_NAME.azurecr.io/$APP_NAME:$TAG .
+          docker push $ACR_NAME.azurecr.io/$APP_NAME:$TAG
+
+      # ===== AKS DEPLOYMENT =====
+      - name: Deploy to AKS
+        run: |
+          az aks get-credentials \
+            --resource-group $RESOURCE_GROUP \
+            --name $AKS_CLUSTER \
+            --overwrite-existing
+          
+          # Update image in deployment
+          sed -i "s|image:.*|image: $ACR_NAME.azurecr.io/$APP_NAME:$TAG|g" infra/docker/k8s/deployment.yaml
+          
+          kubectl apply -f infra/docker/k8s/
+
+      # ===== VERIFICATION =====  
+      - name: Verify deployment
+        run: |
+          kubectl rollout status deployment/crime-analysis
+          kubectl get services -o wide
